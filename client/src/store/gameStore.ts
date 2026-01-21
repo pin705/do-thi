@@ -17,6 +17,8 @@ interface GameState {
   // Real-time Status
   currentSpeed: number;
   setSpeed: (s: number) => void;
+  isMeditating: boolean;
+  setMeditating: (v: boolean) => void;
 
   // UI State
   isScanning: boolean;
@@ -44,6 +46,8 @@ export const useGameStore = create<GameState>((set) => ({
     
   currentSpeed: 0,
   setSpeed: (s) => set({ currentSpeed: s }),
+  isMeditating: false,
+  setMeditating: (v) => set({ isMeditating: v }),
 
   isScanning: false,
   setIsScanning: (v) => set({ isScanning: v }),

@@ -20,6 +20,7 @@ export class MapSystem {
   private otherPlayerMarkers: Map<string, L.Marker> = new Map();
   private herbMarkers: Map<string, L.Marker> = new Map();
   private userCircle: L.Circle | null = null;
+  private selfId: string | null = null;
 
   // Callbacks
   private onHerbClick: ((herb: SpiritHerb) => void) | null = null;
@@ -30,6 +31,10 @@ export class MapSystem {
     this.onMapClick = onMapClick || null;
     // Wait for DOM to be ready
     setTimeout(() => this.initMap(elementId), 100);
+  }
+
+  setSelfId(id: string) {
+      this.selfId = id;
   }
 
   /**
@@ -138,6 +143,7 @@ export class MapSystem {
               const dot = el.querySelector('.dot') as HTMLElement;
               if (dot) dot.style.backgroundImage = `url('${avatarUrl}')`;
           }
+          // Only update name if provided and element exists
           if (name) {
               const nameEl = el.querySelector('.player-name');
               if (nameEl) nameEl.innerHTML = name;
@@ -165,6 +171,9 @@ export class MapSystem {
     const activeIds = new Set<string>();
 
     players.forEach((player) => {
+      // FIX: Skip self
+      if (this.selfId && player.id === this.selfId) return;
+
       activeIds.add(player.id);
       const latLng = new L.LatLng(player.lat, player.lng);
 
@@ -192,7 +201,6 @@ export class MapSystem {
         });
 
         const marker = L.marker(latLng, { icon }).addTo(this.map!);
-        // marker.bindPopup(`<b>${player.name}</b><br>${player.level}`); // Name is now visible directly
         this.otherPlayerMarkers.set(player.id, marker);
       }
     });
@@ -205,34 +213,22 @@ export class MapSystem {
     }
   }
 
-  /**
-   * Render Spirit Herbs (Linh Thảo) on map
-   */
+  // ... (Keep existing methods: renderSpiritHerbs, getLinhCanColor, injectStyles)
   renderSpiritHerbs(herbs: SpiritHerb[], onHerbClick: (herb: SpiritHerb) => void): void {
     if (!this.map) return;
     this.onHerbClick = onHerbClick;
-
     this.herbMarkers.forEach((marker) => marker.remove());
     this.herbMarkers.clear();
-
     herbs.forEach((herb) => {
       const latLng = new L.LatLng(herb.lat, herb.lng);
-
       const icon = L.divIcon({
         className: 'herb-marker',
         html: `<div class="herb-icon ${herb.rarity}">🌿</div>`,
         iconSize: [30, 30],
         iconAnchor: [15, 15],
       });
-
       const marker = L.marker(latLng, { icon }).addTo(this.map!);
-
-      marker.on('click', () => {
-        if (this.onHerbClick) {
-          this.onHerbClick(herb);
-        }
-      });
-
+      marker.on('click', () => { if (this.onHerbClick) this.onHerbClick(herb); });
       this.herbMarkers.set(herb.id, marker);
     });
   }
@@ -255,95 +251,20 @@ export class MapSystem {
       .leaflet-tile-pane {
         filter: contrast(1.1) sepia(0.2) saturate(0.8);
       }
-      
       .player-marker-icon .dot {
-        width: 32px;
-        height: 32px;
-        background-color: transparent;
-        border: 2px solid #2DD4BF;
-        box-shadow: 0 0 10px #2DD4BF, inset 0 0 10px #2DD4BF;
-        border-radius: 50%;
-        position: absolute;
-        top: -6px;
-        left: -6px;
-        z-index: 2;
-        background-size: cover;
-        background-position: center;
+        width: 32px; height: 32px; background-color: transparent; border: 2px solid #2DD4BF; box-shadow: 0 0 10px #2DD4BF, inset 0 0 10px #2DD4BF; border-radius: 50%; position: absolute; top: -6px; left: -6px; z-index: 2; background-size: cover; background-position: center;
       }
-      
-      /* Status: Meditating (Golden Aura) */
-      .player-marker-icon.meditating .dot, 
-      .other-player-icon.meditating .player-dot {
-        box-shadow: 0 0 20px #FFD700, inset 0 0 10px #FFD700;
-        border-color: #FFD700;
-      }
-      .player-marker-icon.meditating .pulse {
-        animation: none;
-        border-color: #FFD700;
-        background-color: rgba(255, 215, 0, 0.2);
-        transform: scale(1.5);
-      }
-
-      .player-marker-icon .pulse {
-        width: 60px;
-        height: 60px;
-        background-color: rgba(45, 212, 191, 0.2);
-        border: 1px solid rgba(45, 212, 191, 0.5);
-        border-radius: 50%;
-        position: absolute;
-        top: -20px;
-        left: -20px;
-        animation: pulse 3s infinite;
-      }
-      @keyframes pulse {
-        0% { transform: scale(0.8); opacity: 0.8; box-shadow: 0 0 0 0 rgba(45, 212, 191, 0.4); }
-        70% { transform: scale(1.2); opacity: 0; box-shadow: 0 0 20px 20px rgba(45, 212, 191, 0); }
-        100% { transform: scale(0.8); opacity: 0; }
-      }
-      
-      /* Name Label */
-      .player-name {
-        position: absolute;
-        top: 30px;
-        left: 50%;
-        transform: translateX(-50%);
-        font-size: 10px;
-        color: white;
-        text-shadow: 1px 1px 2px black;
-        text-align: center;
-        background: rgba(0,0,0,0.6);
-        border-radius: 4px;
-        padding: 2px 4px;
-        white-space: nowrap;
-        font-family: 'JetBrains Mono', monospace;
-        border: 1px solid rgba(45, 212, 191, 0.3);
-      }
-
-      .other-player-icon .player-dot {
-        width: 10px;
-        height: 10px;
-        border-radius: 50%;
-        border: 1px solid white;
-        margin: 0 auto;
-      }
-      /* Reuse player-name for both types */
-      .other-player-icon .player-name {
-        top: 12px;
-      }
-
-      .herb-marker .herb-icon {
-        font-size: 20px;
-        text-align: center;
-        filter: drop-shadow(0 0 5px gold);
-        animation: float 3s ease-in-out infinite;
-      }
+      .player-marker-icon.meditating .dot, .other-player-icon.meditating .player-dot { box-shadow: 0 0 20px #FFD700, inset 0 0 10px #FFD700; border-color: #FFD700; }
+      .player-marker-icon.meditating .pulse { animation: none; border-color: #FFD700; background-color: rgba(255, 215, 0, 0.2); transform: scale(1.5); }
+      .player-marker-icon .pulse { width: 60px; height: 60px; background-color: rgba(45, 212, 191, 0.2); border: 1px solid rgba(45, 212, 191, 0.5); border-radius: 50%; position: absolute; top: -20px; left: -20px; animation: pulse 3s infinite; }
+      @keyframes pulse { 0% { transform: scale(0.8); opacity: 0.8; box-shadow: 0 0 0 0 rgba(45, 212, 191, 0.4); } 70% { transform: scale(1.2); opacity: 0; box-shadow: 0 0 20px 20px rgba(45, 212, 191, 0); } 100% { transform: scale(0.8); opacity: 0; } }
+      .player-name { position: absolute; top: 30px; left: 50%; transform: translateX(-50%); font-size: 10px; color: white; text-shadow: 1px 1px 2px black; text-align: center; background: rgba(0,0,0,0.6); border-radius: 4px; padding: 2px 4px; white-space: nowrap; font-family: 'JetBrains Mono', monospace; border: 1px solid rgba(45, 212, 191, 0.3); }
+      .other-player-icon .player-dot { width: 10px; height: 10px; border-radius: 50%; border: 1px solid white; margin: 0 auto; }
+      .other-player-icon .player-name { top: 12px; }
+      .herb-marker .herb-icon { font-size: 20px; text-align: center; filter: drop-shadow(0 0 5px gold); animation: float 3s ease-in-out infinite; }
       .herb-marker .herb-icon.rare { filter: drop-shadow(0 0 8px purple); }
       .herb-marker .herb-icon.legendary { filter: drop-shadow(0 0 10px orange); }
-      
-      @keyframes float {
-        0%, 100% { transform: translateY(0); }
-        50% { transform: translateY(-5px); }
-      }
+      @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
       .leaflet-control-container { display: none; }
     `;
     document.head.appendChild(style);

@@ -20,11 +20,16 @@ export default {
       },
       animation: {
         'scan': 'scan 3s linear infinite',
+        'float-up': 'floatUp 1.5s ease-out forwards',
       },
       keyframes: {
         scan: {
           '0%': { transform: 'translateY(-100vh)' },
           '100%': { transform: 'translateY(100vh)' },
+        },
+        floatUp: {
+          '0%': { opacity: '1', transform: 'translate(-50%, 0)' },
+          '100%': { opacity: '0', transform: 'translate(-50%, -80px)' },
         }
       }
     },

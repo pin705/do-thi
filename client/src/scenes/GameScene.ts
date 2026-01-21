@@ -35,6 +35,7 @@ export class GameScene extends Phaser.Scene {
       console.log('Auto-Pathing to:', lat, lng);
       this.gpsTracker?.moveTo(lat, lng);
     });
+    this.mapSystem.setSelfId(this.characterId); // Fix duplicate marker
 
     // Init GPS
     this.gpsTracker = new GPSTracker(this.characterData?.totalDistance || 0);
