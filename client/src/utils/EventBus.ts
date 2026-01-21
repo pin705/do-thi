@@ -6,6 +6,7 @@ export type GameEventMap = {
   'CMD_SCAN_CAMERA_START': undefined;
   'CMD_SCAN_RANDOM_START': undefined;
   'CMD_CONFIRM_CHARACTER': undefined;
+  'CMD_LOGIN_SUCCESS': undefined;
   
   // --- GAME SIGNALS (Phaser -> React) ---
   'SIGNAL_LOAD_PROGRESS': number; // 0.0 -> 1.0

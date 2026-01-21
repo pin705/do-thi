@@ -63,6 +63,7 @@ export interface Character {
   exp: number;
   inventory: InventoryItem[];
   lastOnline: number; // Timestamp
+  lastPosition?: { lat: number, lng: number };
   totalDistance: number; // Meters
   createdAt: number;
 }
@@ -74,6 +75,12 @@ export interface GPSPosition {
   timestamp: number;
 }
 
+export enum PlayerStatus {
+  IDLE = 'idle',           // Đứng im
+  WALKING = 'walking',     // Di chuyển
+  MEDITATING = 'meditating' // Ngồi thiền (AFK lâu)
+}
+
 // Real-time player data for Map
 export interface PlayerMapData {
   id: string;
@@ -82,6 +89,9 @@ export interface PlayerMapData {
   lng: number;
   linhCan: LinhCan;
   level: CultivationLevel;
+  avatar?: string;
+  status: PlayerStatus;
+  speed: number; // km/h
 }
 
 // Spirit Herb on map

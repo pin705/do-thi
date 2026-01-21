@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { Character, LinhCan, CultivationLevel } from '@urban-xianxia/shared';
 
-type GameSceneType = 'BOOT' | 'PRELOAD' | 'ONBOARDING' | 'GAME';
+type GameSceneType = 'BOOT' | 'PRELOAD' | 'LOGIN' | 'ONBOARDING' | 'GAME';
 
 interface GameState {
   // Scene Management
@@ -13,6 +13,10 @@ interface GameState {
   setCharacter: (char: Character) => void;
   updateLinhKhi: (amount: number) => void;
   updateDistance: (dist: number) => void;
+  
+  // Real-time Status
+  currentSpeed: number;
+  setSpeed: (s: number) => void;
 
   // UI State
   isScanning: boolean;
@@ -37,6 +41,9 @@ export const useGameStore = create<GameState>((set) => ({
     set((state) => ({
       character: state.character ? { ...state.character, totalDistance: dist } : null,
     })),
+    
+  currentSpeed: 0,
+  setSpeed: (s) => set({ currentSpeed: s }),
 
   isScanning: false,
   setIsScanning: (v) => set({ isScanning: v }),

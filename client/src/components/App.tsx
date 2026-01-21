@@ -3,6 +3,7 @@ import { useGameStore } from '../store/gameStore';
 import { GameHUD } from './GameHUD';
 import { OnboardingUI } from './OnboardingUI';
 import { PreloadUI } from './PreloadUI';
+import { LoginUI } from './LoginUI';
 
 export const App = () => {
   const currentScene = useGameStore((state) => state.currentScene);
@@ -18,6 +19,7 @@ export const App = () => {
       )}
       
       {currentScene === 'PRELOAD' && <PreloadUI />}
+      {currentScene === 'LOGIN' && <LoginUI />}
       {currentScene === 'ONBOARDING' && <OnboardingUI />}
       {currentScene === 'GAME' && <GameHUD />}
     </div>

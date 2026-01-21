@@ -6,6 +6,7 @@ import './styles/global.css';
 
 import { BootScene } from './scenes/BootScene';
 import { PreloadScene } from './scenes/PreloadScene';
+import { LoginScene } from './scenes/LoginScene';
 import { OnboardingScene } from './scenes/OnboardingScene';
 import { GameScene } from './scenes/GameScene';
 
@@ -30,7 +31,7 @@ const config: Phaser.Types.Core.GameConfig = {
   dom: {
     createContainer: true
   },
-  scene: [BootScene, PreloadScene, OnboardingScene, GameScene],
+  scene: [BootScene, PreloadScene, LoginScene, OnboardingScene, GameScene],
   scale: {
     mode: Phaser.Scale.RESIZE,
     autoCenter: Phaser.Scale.CENTER_BOTH

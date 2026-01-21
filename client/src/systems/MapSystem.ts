@@ -1,6 +1,6 @@
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { GPSPosition, PlayerMapData, SpiritHerb, LinhCan, ItemRarity } from '@urban-xianxia/shared';
+import { GPSPosition, PlayerMapData, SpiritHerb, LinhCan, ItemRarity, PlayerStatus } from '@urban-xianxia/shared';
 
 // Fix Leaflet default icon issue
 const defaultIcon = L.icon({
@@ -36,7 +36,11 @@ export class MapSystem {
    * Initialize Leaflet map
    */
   private initMap(elementId: string): void {
-    // ... (Existing checks)
+    const element = document.getElementById(elementId);
+    if (!element) {
+      console.error(`Map container #${elementId} not found`);
+      return;
+    }
 
     try {
         console.log('MapSystem: Creating Leaflet instance...');
@@ -65,7 +69,6 @@ export class MapSystem {
         const resizeInterval = setInterval(() => {
             if (this.map) {
                 this.map.invalidateSize();
-                console.log('MapSystem: invalidateSize called');
             } else {
                 clearInterval(resizeInterval);
             }
@@ -94,31 +97,58 @@ export class MapSystem {
   /**
    * Update current player position
    */
-  updatePlayerPosition(position: GPSPosition, avatarUrl?: string): void {
+  updatePlayerPosition(position: GPSPosition, avatarUrl?: string, name?: string, status?: PlayerStatus): void {
     if (!this.map) return;
 
     const latLng = new L.LatLng(position.lat, position.lng);
 
     if (!this.playerMarker) {
-      // Create player marker
+      // Create player marker with name label
       const playerIcon = L.divIcon({
         className: 'player-marker-icon',
-        html: `<div class="pulse"></div><div class="dot" style="${avatarUrl ? `background-image: url('${avatarUrl}')` : ''}"></div>`,
+        html: `
+            <div class="pulse"></div>
+            <div class="dot" style="${avatarUrl ? `background-image: url('${avatarUrl}')` : ''}"></div>
+            <div class="player-name">${name || 'Đạo Hữu'}</div>
+        `,
         iconSize: [20, 20],
         iconAnchor: [10, 10],
       });
 
       this.playerMarker = L.marker(latLng, { icon: playerIcon }).addTo(this.map);
-      // ...
+
+      // Add detection radius circle (50m)
+      this.userCircle = L.circle(latLng, {
+        radius: 50,
+        color: '#4a90e2',
+        fillColor: '#4a90e2',
+        fillOpacity: 0.1,
+        weight: 1,
+      }).addTo(this.map);
+
+      this.map.setView(latLng, 17); // Zoom in on first locate
     } else {
       this.playerMarker.setLatLng(latLng);
       this.userCircle?.setLatLng(latLng);
       
-      // Update avatar if changed
-      if (avatarUrl) {
-          const el = this.playerMarker.getElement();
-          const dot = el?.querySelector('.dot') as HTMLElement;
-          if (dot) dot.style.backgroundImage = `url('${avatarUrl}')`;
+      // Update DOM
+      const el = this.playerMarker.getElement();
+      if (el) {
+          if (avatarUrl) {
+              const dot = el.querySelector('.dot') as HTMLElement;
+              if (dot) dot.style.backgroundImage = `url('${avatarUrl}')`;
+          }
+          if (name) {
+              const nameEl = el.querySelector('.player-name');
+              if (nameEl) nameEl.innerHTML = name;
+          }
+          
+          // Status Effects
+          if (status === PlayerStatus.MEDITATING) {
+              el.classList.add('meditating');
+          } else {
+              el.classList.remove('meditating');
+          }
       }
       
       // Smooth pan to new location
@@ -132,7 +162,6 @@ export class MapSystem {
   updateOtherPlayers(players: PlayerMapData[]): void {
     if (!this.map) return;
 
-    // Track active IDs to remove disconnected players
     const activeIds = new Set<string>();
 
     players.forEach((player) => {
@@ -140,11 +169,20 @@ export class MapSystem {
       const latLng = new L.LatLng(player.lat, player.lng);
 
       if (this.otherPlayerMarkers.has(player.id)) {
-        // Update existing marker
         const marker = this.otherPlayerMarkers.get(player.id)!;
         marker.setLatLng(latLng);
+        
+        // Update status class for other players
+        const el = marker.getElement();
+        if (el) {
+            if (player.status === PlayerStatus.MEDITATING) {
+                el.classList.add('meditating');
+            } else {
+                el.classList.remove('meditating');
+            }
+        }
+
       } else {
-        // Create new marker based on Linh Căn color
         const color = this.getLinhCanColor(player.linhCan);
         const icon = L.divIcon({
           className: 'other-player-icon',
@@ -154,12 +192,11 @@ export class MapSystem {
         });
 
         const marker = L.marker(latLng, { icon }).addTo(this.map!);
-        marker.bindPopup(`<b>${player.name}</b><br>${player.level}`);
+        // marker.bindPopup(`<b>${player.name}</b><br>${player.level}`); // Name is now visible directly
         this.otherPlayerMarkers.set(player.id, marker);
       }
     });
 
-    // Remove markers for players who left
     for (const [id, marker] of this.otherPlayerMarkers.entries()) {
       if (!activeIds.has(id)) {
         marker.remove();
@@ -175,11 +212,6 @@ export class MapSystem {
     if (!this.map) return;
     this.onHerbClick = onHerbClick;
 
-    // Clear old markers that are not in the new list?
-    // For simplicity, we'll clear all and redraw or update.
-    // A better approach is diffing, similar to players.
-
-    // Simple implementation: clear all and redraw
     this.herbMarkers.forEach((marker) => marker.remove());
     this.herbMarkers.clear();
 
@@ -195,7 +227,6 @@ export class MapSystem {
 
       const marker = L.marker(latLng, { icon }).addTo(this.map!);
 
-      // Click handler for AR mode
       marker.on('click', () => {
         if (this.onHerbClick) {
           this.onHerbClick(herb);
@@ -206,34 +237,21 @@ export class MapSystem {
     });
   }
 
-  /**
-   * Get hex color for Linh Căn
-   */
   private getLinhCanColor(linhCan: LinhCan): string {
     switch (linhCan) {
-      case LinhCan.KIM:
-        return '#FFD700'; // Gold
-      case LinhCan.MOC:
-        return '#228B22'; // Green
-      case LinhCan.THUY:
-        return '#1E90FF'; // Blue
-      case LinhCan.HOA:
-        return '#FF4500'; // Red
-      case LinhCan.THO:
-        return '#8B4513'; // Brown
-      default:
-        return '#999999';
+      case LinhCan.KIM: return '#FFD700'; 
+      case LinhCan.MOC: return '#228B22'; 
+      case LinhCan.THUY: return '#1E90FF'; 
+      case LinhCan.HOA: return '#FF4500'; 
+      case LinhCan.THO: return '#8B4513'; 
+      default: return '#999999';
     }
   }
 
   private injectStyles(): void {
-    // Only inject if not exists
-    if (document.getElementById('map-styles')) return;
-
     const style = document.createElement('style');
     style.id = 'map-styles';
     style.textContent = `
-      /* Map Filter for Mystic Look */
       .leaflet-tile-pane {
         filter: contrast(1.1) sepia(0.2) saturate(0.8);
       }
@@ -249,10 +267,23 @@ export class MapSystem {
         top: -6px;
         left: -6px;
         z-index: 2;
-        /* Image will be injected via JS if avatar exists */
         background-size: cover;
         background-position: center;
       }
+      
+      /* Status: Meditating (Golden Aura) */
+      .player-marker-icon.meditating .dot, 
+      .other-player-icon.meditating .player-dot {
+        box-shadow: 0 0 20px #FFD700, inset 0 0 10px #FFD700;
+        border-color: #FFD700;
+      }
+      .player-marker-icon.meditating .pulse {
+        animation: none;
+        border-color: #FFD700;
+        background-color: rgba(255, 215, 0, 0.2);
+        transform: scale(1.5);
+      }
+
       .player-marker-icon .pulse {
         width: 60px;
         height: 60px;
@@ -269,6 +300,25 @@ export class MapSystem {
         70% { transform: scale(1.2); opacity: 0; box-shadow: 0 0 20px 20px rgba(45, 212, 191, 0); }
         100% { transform: scale(0.8); opacity: 0; }
       }
+      
+      /* Name Label */
+      .player-name {
+        position: absolute;
+        top: 30px;
+        left: 50%;
+        transform: translateX(-50%);
+        font-size: 10px;
+        color: white;
+        text-shadow: 1px 1px 2px black;
+        text-align: center;
+        background: rgba(0,0,0,0.6);
+        border-radius: 4px;
+        padding: 2px 4px;
+        white-space: nowrap;
+        font-family: 'JetBrains Mono', monospace;
+        border: 1px solid rgba(45, 212, 191, 0.3);
+      }
+
       .other-player-icon .player-dot {
         width: 10px;
         height: 10px;
@@ -276,16 +326,11 @@ export class MapSystem {
         border: 1px solid white;
         margin: 0 auto;
       }
+      /* Reuse player-name for both types */
       .other-player-icon .player-name {
-        font-size: 10px;
-        color: white;
-        text-shadow: 1px 1px 2px black;
-        text-align: center;
-        margin-top: 2px;
-        background: rgba(0,0,0,0.5);
-        border-radius: 4px;
-        padding: 1px 3px;
+        top: 12px;
       }
+
       .herb-marker .herb-icon {
         font-size: 20px;
         text-align: center;
@@ -299,7 +344,6 @@ export class MapSystem {
         0%, 100% { transform: translateY(0); }
         50% { transform: translateY(-5px); }
       }
-      /* Hide Leaflet Controls to use our HUD */
       .leaflet-control-container { display: none; }
     `;
     document.head.appendChild(style);

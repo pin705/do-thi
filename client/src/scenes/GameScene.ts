@@ -110,9 +110,10 @@ export class GameScene extends Phaser.Scene {
         useGameStore.getState().updateLinhKhi(result.linhKhiGained);
       }
       useGameStore.getState().updateDistance(result.totalDistance);
+      useGameStore.getState().setSpeed(result.speed);
 
       const avatarUrl = this.characterData?.avatar || `https://api.dicebear.com/7.x/notionists/svg?seed=${this.characterId}&backgroundColor=b6e3f4`;
-      this.mapSystem?.updatePlayerPosition(result.currentPosition, avatarUrl);
+      this.mapSystem?.updatePlayerPosition(result.currentPosition, avatarUrl, this.characterData?.name);
       
       this.socket?.emit('player:move', result.currentPosition);
 

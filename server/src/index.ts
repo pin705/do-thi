@@ -13,6 +13,7 @@ import {
   LinhCan,
 } from '@urban-xianxia/shared';
 import { PlayerController } from './controllers/player.controller.js';
+import { AuthController } from './controllers/auth.controller.js';
 import { CharacterModel } from './models/Character.js';
 
 dotenv.config();
@@ -33,9 +34,13 @@ app.use(cors());
 app.use(express.json());
 
 // API Routes
-app.post('/api/player', PlayerController.create);
+app.post('/api/player', PlayerController.create); // Legacy Guest
 app.get('/api/player/:id', PlayerController.get);
 app.patch('/api/player/:id/progress', PlayerController.updateProgress);
+
+// Auth Routes
+app.post('/api/auth/register', AuthController.register);
+app.post('/api/auth/login', AuthController.login);
 
 // Redis Client
 const redisClient = createClient({
@@ -78,6 +83,9 @@ io.on('connection', (socket) => {
         lng: data.position.lng,
         linhCan: character.linhCan as LinhCan,
         level: character.level as any,
+        // Default mock status if not provided yet
+        status: 'idle' as any,
+        speed: 0
       };
 
       activePlayers.set(playerId, playerData);
@@ -101,6 +109,9 @@ io.on('connection', (socket) => {
     if (player) {
       player.lat = position.lat;
       player.lng = position.lng;
+      // Note: Speed/Status should be sent from Client in 'player:move' payload optimally, 
+      // or calculated here. For now, client sends raw position. 
+      // We will trust client for now or add speed to GPSPosition DTO later.
 
       // Update in Redis
       await redisClient.set(`player:${playerId}`, JSON.stringify(player));
@@ -121,9 +132,24 @@ io.on('connection', (socket) => {
     handleDisconnect();
   });
 
-  function handleDisconnect() {
+  async function handleDisconnect() {
     if (playerId) {
       console.log('Player disconnected:', playerId);
+      
+      // Persist data to MongoDB on disconnect
+      const playerData = activePlayers.get(playerId);
+      if (playerData) {
+          try {
+              await CharacterModel.findByIdAndUpdate(playerId, {
+                  'lastPosition.lat': playerData.lat,
+                  'lastPosition.lng': playerData.lng,
+                  lastOnline: Date.now()
+              });
+          } catch (e) {
+              console.error("Failed to save player state:", e);
+          }
+      }
+
       activePlayers.delete(playerId);
       redisClient.del(`player:${playerId}`);
       io.emit('player:left', playerId);

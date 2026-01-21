@@ -23,7 +23,7 @@ export class PreloadScene extends Phaser.Scene {
       if (characterId) {
         this.scene.start('GameScene', { characterId });
       } else {
-        this.scene.start('OnboardingScene');
+        this.scene.start('LoginScene'); // Go to Login instead of Onboarding
       }
     });
   }

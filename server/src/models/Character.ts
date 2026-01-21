@@ -15,6 +15,8 @@ const InventoryItemSchema = new Schema({
 
 const CharacterSchema = new Schema(
   {
+    username: { type: String, unique: true, sparse: true },
+    password: { type: String, select: false },
     name: { type: String, required: true },
     avatar: { type: String, default: '' },
     linhCan: { type: String, enum: Object.values(LinhCan), required: true },
@@ -27,6 +29,10 @@ const CharacterSchema = new Schema(
     exp: { type: Number, default: 0 },
     inventory: [InventoryItemSchema],
     lastOnline: { type: Number, default: Date.now },
+    lastPosition: {
+        lat: { type: Number, default: 21.0285 },
+        lng: { type: Number, default: 105.8542 }
+    },
     totalDistance: { type: Number, default: 0 },
     createdAt: { type: Number, default: Date.now },
   },
