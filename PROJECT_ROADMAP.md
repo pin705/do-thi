@@ -15,54 +15,59 @@
 ### 🚀 Server Core (`server/src/`)
 - [x] **Database:** Mongoose Models (`Character`), Controller API (Create/Get).
 - [x] **Socket.io:** Real-time sync, Redis integration.
-- [x] **Lão Tổ System:** Rule-based logic.
+- [x] **Avatar Support:** API hỗ trợ lưu và trả về avatar URL.
 
 ### 📱 Client Architecture (`client/src/`)
-- [x] **Hybrid Architecture:** Phaser (Game Loop/Canvas) + React (UI/HUD) + Zustand (State Bridge).
+- [x] **Hybrid Architecture:** Phaser (Game Loop/Canvas) + React (UI/HUD) + Leaflet (Map).
 - [x] **Event Bus:** Type-safe Event System thay thế `window.dispatchEvent`.
-- [x] **Styling:** Tailwind CSS + "Digital Artifact" Design System (Glassmorphism, Neon).
+- [x] **Styling:** Tailwind CSS + "Digital Artifact" Design System.
 
 ### 📱 Game Scenes & Features
-- [x] **Boot & Preload:**
-    - Fake loading process.
-    - Programmatic textures (tránh lỗi thiếu assets).
+- [x] **Map System:**
+    - **Visual:** Dark Mode + CSS Filter (Theme Tu Tiên).
+    - **Interaction:** Auto-Pathing (Click to Move).
+    - **Markers:** Avatar thật (DiceBear) + Pulse Effect.
 - [x] **Onboarding (Thức tỉnh):**
-    - UI: Chọn chế độ Camera (Real) hoặc Random (Simulated).
+    - UI: Chọn chế độ Camera/Random.
     - Logic: Camera Analyzer (Pixel Analysis) -> API Create Character.
-    - Fallback: Tự động chuyển sang Random nếu Camera lỗi.
-- [x] **Main Game (Map HUD):**
-    - UI: React HUD (Avatar, Level, Linh Khí) đè lên Phaser Canvas.
-    - Map: Leaflet.js render lớp dưới cùng (Z-0).
-    - Logic: Socket.io sync vị trí thời gian thực.
+- [x] **GPS Logic:**
+    - Fake GPS Simulation (cho Dev).
+    - Real GPS Tracking (cho Mobile).
+    - Fallback: Tự động chuyển sang Fake nếu GPS lỗi.
 
 ---
 
 ## 📝 2. UPCOMING TASKS (Công việc tiếp theo)
 
-### Phase 2: Gameplay Loop & Content
-- [ ] **Game Loop:**
-    - Di chuyển thật (GPS) -> Cộng Linh Khí (Server validate).
-    - Level Up System (Exp threshold).
+### Phase 2: Gameplay Loop & Content (Đang thực hiện)
+- [ ] **Movement Logic:**
+    - Hiện tại: Auto-pathing là giả lập (Teleport/Linear).
+    - Cần làm: Pathfinding trên đường đi thực tế (Routing API - OSRM) hoặc giữ nguyên Linear nếu muốn đơn giản.
+    - Server Validation: Chống hack speed/teleport.
 - [ ] **Inventory System:**
-    - UI Túi đồ (React Modal).
-    - Logic nhặt vật phẩm trên map (Click marker -> Add to inventory).
-- [ ] **Combat System Integration:**
-    - Khi encounter -> Chuyển Scene Combat.
-    - Vẽ bùa trên Canvas (Phaser) -> Trừ máu quái.
+    - **UI:** React Modal hiển thị lưới vật phẩm.
+    - **Backend:** API `GET /inventory`, `POST /use-item`.
+    - **Interaction:** Click Linh Thảo trên Map -> Loot -> Update Inventory.
+- [ ] **Tu Luyện (Cultivation):**
+    - UI: Màn hình ngồi thiền (Idle).
+    - Logic: Tích lũy Linh khí theo thời gian (Passive) + Di chuyển (Active).
+    - Đột phá: Minigame Rhythm khi đủ EXP.
 
 ### Phase 3: Deployment & Testing
 - [ ] **HTTPS Setup:** Cấu hình Vite HTTPS hoặc Ngrok.
-- [ ] **Fake GPS Tool:** DevTool UI để giả lập di chuyển.
+- [ ] **Mobile Optimization:** Test touch events, safe area (notch).
 
 ---
 
 ## ⚠️ 3. TECHNICAL NOTES
 
-1.  **React x Phaser:**
-    - `Map` (DOM z-0) < `Phaser` (Canvas z-1 pointer-none) < `React` (DOM z-2 pointer-none).
-    - React UI elements phải có `pointer-events-auto`.
-    - Dùng `useGameStore` (Zustand) để sync data từ Phaser -> React.
-    - Dùng `gameEventBus` để gửi lệnh từ React -> Phaser.
+1.  **Map Interaction:**
+    - Để click được xuống Map, các layer trên (`#ui-root`, `#phaser-container`) phải có `pointer-events: none`.
+    - Các nút bấm UI phải set `pointer-events: auto` thủ công.
+2.  **Avatar Rendering:**
+    - Dùng CSS `background-image` trên Leaflet Marker (`divIcon`) để hiển thị avatar tròn.
+3.  **GPS Simulation:**
+    - `GPSTracker` tự động chạy mode Simulation nếu không có GPS thật hoặc timeout 3s.
 
 ---
 *File này sẽ được cập nhật liên tục sau mỗi phiên làm việc.*

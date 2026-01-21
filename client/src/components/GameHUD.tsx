@@ -7,7 +7,7 @@ export const GameHUD = () => {
   if (!character) return null;
 
   return (
-    <div className="w-full h-full flex flex-col justify-between p-4">
+    <div className="w-full h-full flex flex-col justify-between p-4 pointer-events-none">
       {/* Header */}
       <header className="flex items-center justify-between pointer-events-auto">
         <div className="flex items-center gap-3">
