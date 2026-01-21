@@ -8,43 +8,59 @@
       body {
         margin: 0;
         padding: 0;
-        background-color: #020617; /* Deep Void */
+        background-color: #020617;
         overflow: hidden;
-        font-family: 'JetBrains Mono', monospace;
       }
-      #app {
-        position: relative;
+      
+      /* Map Layer (Bottom) */
+      #map {
+        position: fixed;
+        top: 0;
+        left: 0;
         width: 100vw;
         height: 100vh;
+        z-index: 0;
+        background: #222; /* Debug visible background */
       }
-      #map {
-        position: absolute;
+
+      /* Phaser Layer (Middle) */
+      #phaser-container {
+        position: fixed;
         top: 0;
         left: 0;
-        width: 100%;
-        height: 100%;
-        z-index: 1; /* Below Phaser */
+        width: 100vw;
+        height: 100vh;
+        z-index: 1;
+        pointer-events: none; /* Let clicks pass to Map */
       }
-      canvas {
-        position: absolute;
+      
+      /* Phaser Canvas specific */
+      #phaser-container canvas {
+        pointer-events: none;
+      }
+
+      /* React UI Layer (Top) */
+      #ui-root {
+        position: fixed;
         top: 0;
         left: 0;
+        width: 100vw;
+        height: 100vh;
         z-index: 2;
-        pointer-events: none; /* Map interaction priority */
+        pointer-events: none; /* Let clicks pass where no UI */
       }
-      /* Allow interaction with Phaser DOM elements (Buttons) */
-      div[style*="pointer-events: auto"] {
+
+      /* Enable pointer events for interactive elements inside layers */
+      .pointer-events-auto, button, a, input, .leaflet-interactive {
         pointer-events: auto !important;
       }
     </style>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
   </head>
   <body>
-    <div id="app">
-      <div id="map"></div>
-      <div id="phaser-container"></div>
-      <div id="ui-root"></div>
-    </div>
+    <div id="map"></div>
+    <div id="phaser-container"></div>
+    <div id="ui-root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

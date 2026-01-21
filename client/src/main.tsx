@@ -24,8 +24,9 @@ const config: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,
   width: window.innerWidth,
   height: window.innerHeight,
-  parent: 'phaser-container', // Attach to specific container
-  backgroundColor: 'transparent',
+  parent: 'phaser-container',
+  transparent: true, // IMPORTANT: Force transparency
+  backgroundColor: 'rgba(0,0,0,0)',
   dom: {
     createContainer: true
   },

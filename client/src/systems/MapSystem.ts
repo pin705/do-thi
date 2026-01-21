@@ -25,6 +25,7 @@ export class MapSystem {
   private onHerbClick: ((herb: SpiritHerb) => void) | null = null;
 
   constructor(elementId: string) {
+    console.log(`MapSystem: Initializing with ID #${elementId}`);
     // Wait for DOM to be ready
     setTimeout(() => this.initMap(elementId), 100);
   }
@@ -39,20 +40,59 @@ export class MapSystem {
       return;
     }
 
-    // Default view (will be updated by GPS)
-    this.map = L.map(elementId, {
-      zoomControl: false,
-      attributionControl: false,
-    }).setView([21.0285, 105.8542], 16); // Hanoi default
+    console.log('MapSystem: Container found, cleaning up...');
 
-    // Dark mode map tiles (Stadia Maps or CartoDB Dark Matter are good for gaming look,
-    // but we use OpenStreetMap standard for guaranteed free access, maybe styled with CSS later)
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 19,
-    }).addTo(this.map);
+    // CLEANUP: If map already exists, remove it first
+    // @ts-ignore
+    if (element._leaflet_id) {
+        element.innerHTML = '';
+        // @ts-ignore
+        element._leaflet_id = null;
+    }
 
-    // Add custom styles for map markers via CSS if needed
-    this.injectStyles();
+    try {
+        console.log('MapSystem: Creating Leaflet instance...');
+        // Default view (Hanoi)
+        this.map = L.map(elementId, {
+          zoomControl: false,
+          attributionControl: false,
+        }).setView([21.0285, 105.8542], 16);
+    
+        // Standard OpenStreetMap (Free & Reliable)
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          maxZoom: 19,
+        }).addTo(this.map);
+    
+        console.log('MapSystem: Map created successfully.');
+
+        // Force resize loop to ensure visibility
+        const resizeInterval = setInterval(() => {
+            if (this.map) {
+                this.map.invalidateSize();
+                console.log('MapSystem: invalidateSize called');
+            } else {
+                clearInterval(resizeInterval);
+            }
+        }, 500);
+
+        // Stop checking after 5 seconds
+        setTimeout(() => clearInterval(resizeInterval), 5000);
+    
+        this.injectStyles();
+    } catch (e) {
+        console.error("Map Init Error:", e);
+    }
+  }
+
+  /**
+   * Destroy map instance
+   */
+  destroy(): void {
+    if (this.map) {
+      console.log('MapSystem: Destroying map');
+      this.map.remove();
+      this.map = null;
+    }
   }
 
   /**
@@ -193,7 +233,11 @@ export class MapSystem {
   }
 
   private injectStyles(): void {
+    // Only inject if not exists
+    if (document.getElementById('map-styles')) return;
+
     const style = document.createElement('style');
+    style.id = 'map-styles';
     style.textContent = `
       .player-marker-icon .dot {
         width: 12px;
@@ -250,6 +294,8 @@ export class MapSystem {
         0%, 100% { transform: translateY(0); }
         50% { transform: translateY(-5px); }
       }
+      /* Hide Leaflet Controls to use our HUD */
+      .leaflet-control-container { display: none; }
     `;
     document.head.appendChild(style);
   }
