@@ -52,14 +52,17 @@ export class PreloadScene extends Phaser.Scene {
     graphics.fillCircle(4, 4, 4);
     graphics.generateTexture('particle', 8, 8);
 
-    // Generate Herb Icon
+    // Generate Herb Icon (Simple Diamond Shape)
     graphics.clear();
     graphics.lineStyle(2, 0x22c55e);
+    graphics.fillStyle(0x22c55e, 0.5);
     graphics.beginPath();
-    graphics.moveTo(16, 32);
-    graphics.quadraticBezierTo(16, 16, 32, 0);
-    graphics.moveTo(16, 32);
-    graphics.quadraticBezierTo(16, 16, 0, 0);
+    graphics.moveTo(16, 0);    // Top
+    graphics.lineTo(32, 16);   // Right
+    graphics.lineTo(16, 32);   // Bottom
+    graphics.lineTo(0, 16);    // Left
+    graphics.closePath();
+    graphics.fillPath();
     graphics.strokePath();
     graphics.generateTexture('herb_icon', 32, 32);
   }
