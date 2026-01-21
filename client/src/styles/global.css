@@ -1,3 +1,7 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 :root {
   --deep-void: #020617;
   --circuit-slate: #1E293B;

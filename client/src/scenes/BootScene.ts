@@ -6,10 +6,11 @@ export class BootScene extends Phaser.Scene {
   }
 
   create() {
+    console.log('BootScene started');
     // Configure resizing
     this.scale.on('resize', this.resize, this);
 
-    // Start Preloader
+    // Artificial delay to allow React to mount and user to see Boot screen
     this.scene.start('PreloadScene');
   }
 

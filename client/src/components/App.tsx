@@ -9,7 +9,14 @@ export const App = () => {
 
   return (
     <div className="absolute top-0 left-0 w-full h-full pointer-events-none z-10">
-      {/* Global Overlays can go here */}
+      {currentScene === 'BOOT' && (
+        <div className="w-full h-full flex items-center justify-center bg-[#020617] pointer-events-auto">
+          <div className="text-[#2DD4BF] font-mono animate-pulse">
+            SYSTEM BOOTING...
+          </div>
+        </div>
+      )}
+      
       {currentScene === 'PRELOAD' && <PreloadUI />}
       {currentScene === 'ONBOARDING' && <OnboardingUI />}
       {currentScene === 'GAME' && <GameHUD />}
