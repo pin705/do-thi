@@ -23,9 +23,11 @@ export class MapSystem {
 
   // Callbacks
   private onHerbClick: ((herb: SpiritHerb) => void) | null = null;
+  private onMapClick: ((lat: number, lng: number) => void) | null = null;
 
-  constructor(elementId: string) {
+  constructor(elementId: string, onMapClick?: (lat: number, lng: number) => void) {
     console.log(`MapSystem: Initializing with ID #${elementId}`);
+    this.onMapClick = onMapClick || null;
     // Wait for DOM to be ready
     setTimeout(() => this.initMap(elementId), 100);
   }
@@ -34,21 +36,7 @@ export class MapSystem {
    * Initialize Leaflet map
    */
   private initMap(elementId: string): void {
-    const element = document.getElementById(elementId);
-    if (!element) {
-      console.error(`Map container #${elementId} not found`);
-      return;
-    }
-
-    console.log('MapSystem: Container found, cleaning up...');
-
-    // CLEANUP: If map already exists, remove it first
-    // @ts-ignore
-    if (element._leaflet_id) {
-        element.innerHTML = '';
-        // @ts-ignore
-        element._leaflet_id = null;
-    }
+    // ... (Existing checks)
 
     try {
         console.log('MapSystem: Creating Leaflet instance...');
@@ -58,10 +46,18 @@ export class MapSystem {
           attributionControl: false,
         }).setView([21.0285, 105.8542], 16);
     
-        // Standard OpenStreetMap (Free & Reliable)
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          maxZoom: 19,
+        // Dark Theme Map (CartoDB Dark Matter)
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+          maxZoom: 20,
+          subdomains: 'abcd'
         }).addTo(this.map);
+        
+        // Click Event for Auto-Pathing
+        this.map.on('click', (e: L.LeafletMouseEvent) => {
+            if (this.onMapClick) {
+                this.onMapClick(e.latlng.lat, e.latlng.lng);
+            }
+        });
     
         console.log('MapSystem: Map created successfully.');
 
@@ -98,35 +94,33 @@ export class MapSystem {
   /**
    * Update current player position
    */
-  updatePlayerPosition(position: GPSPosition): void {
+  updatePlayerPosition(position: GPSPosition, avatarUrl?: string): void {
     if (!this.map) return;
 
     const latLng = new L.LatLng(position.lat, position.lng);
 
     if (!this.playerMarker) {
-      // Create player marker (Blue dot with pulse)
+      // Create player marker
       const playerIcon = L.divIcon({
         className: 'player-marker-icon',
-        html: '<div class="pulse"></div><div class="dot"></div>',
+        html: `<div class="pulse"></div><div class="dot" style="${avatarUrl ? `background-image: url('${avatarUrl}')` : ''}"></div>`,
         iconSize: [20, 20],
         iconAnchor: [10, 10],
       });
 
       this.playerMarker = L.marker(latLng, { icon: playerIcon }).addTo(this.map);
-
-      // Add detection radius circle (50m)
-      this.userCircle = L.circle(latLng, {
-        radius: 50,
-        color: '#4a90e2',
-        fillColor: '#4a90e2',
-        fillOpacity: 0.1,
-        weight: 1,
-      }).addTo(this.map);
-
-      this.map.setView(latLng, 17); // Zoom in on first locate
+      // ...
     } else {
       this.playerMarker.setLatLng(latLng);
       this.userCircle?.setLatLng(latLng);
+      
+      // Update avatar if changed
+      if (avatarUrl) {
+          const el = this.playerMarker.getElement();
+          const dot = el?.querySelector('.dot') as HTMLElement;
+          if (dot) dot.style.backgroundImage = `url('${avatarUrl}')`;
+      }
+      
       // Smooth pan to new location
       this.map.panTo(latLng);
     }
@@ -239,30 +233,41 @@ export class MapSystem {
     const style = document.createElement('style');
     style.id = 'map-styles';
     style.textContent = `
+      /* Map Filter for Mystic Look */
+      .leaflet-tile-pane {
+        filter: contrast(1.1) sepia(0.2) saturate(0.8);
+      }
+      
       .player-marker-icon .dot {
-        width: 12px;
-        height: 12px;
-        background-color: #4a90e2;
-        border: 2px solid white;
+        width: 32px;
+        height: 32px;
+        background-color: transparent;
+        border: 2px solid #2DD4BF;
+        box-shadow: 0 0 10px #2DD4BF, inset 0 0 10px #2DD4BF;
         border-radius: 50%;
         position: absolute;
-        top: 4px;
-        left: 4px;
+        top: -6px;
+        left: -6px;
         z-index: 2;
+        /* Image will be injected via JS if avatar exists */
+        background-size: cover;
+        background-position: center;
       }
       .player-marker-icon .pulse {
-        width: 20px;
-        height: 20px;
-        background-color: rgba(74, 144, 226, 0.5);
+        width: 60px;
+        height: 60px;
+        background-color: rgba(45, 212, 191, 0.2);
+        border: 1px solid rgba(45, 212, 191, 0.5);
         border-radius: 50%;
         position: absolute;
-        top: 0;
-        left: 0;
-        animation: pulse 2s infinite;
+        top: -20px;
+        left: -20px;
+        animation: pulse 3s infinite;
       }
       @keyframes pulse {
-        0% { transform: scale(1); opacity: 0.8; }
-        100% { transform: scale(3); opacity: 0; }
+        0% { transform: scale(0.8); opacity: 0.8; box-shadow: 0 0 0 0 rgba(45, 212, 191, 0.4); }
+        70% { transform: scale(1.2); opacity: 0; box-shadow: 0 0 20px 20px rgba(45, 212, 191, 0); }
+        100% { transform: scale(0.8); opacity: 0; }
       }
       .other-player-icon .player-dot {
         width: 10px;

@@ -16,6 +16,7 @@ const InventoryItemSchema = new Schema({
 const CharacterSchema = new Schema(
   {
     name: { type: String, required: true },
+    avatar: { type: String, default: '' },
     linhCan: { type: String, enum: Object.values(LinhCan), required: true },
     level: {
       type: String,

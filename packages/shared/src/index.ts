@@ -56,6 +56,7 @@ export interface InventoryItem {
 export interface Character {
   id: string;
   name: string;
+  avatar?: string; // Avatar URL
   linhCan: LinhCan;
   level: CultivationLevel;
   linhKhi: number; // Linh Khí (Qi)
