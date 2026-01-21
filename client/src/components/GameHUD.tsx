@@ -1,31 +1,31 @@
 import React, { useEffect } from 'react';
 import { useGameStore } from '../store/gameStore';
 import { useFloatingTextStore } from '../store/floatingTextStore';
+import { gameEventBus } from '../utils/EventBus';
+import { useGameEvent } from '../hooks/useGameEvent';
 
 export const GameHUD = () => {
   const character = useGameStore((state) => state.character);
   const speed = useGameStore((state) => state.currentSpeed);
   const isMeditating = useGameStore((state) => state.isMeditating);
   const setMeditating = useGameStore((state) => state.setMeditating);
-  const updateLinhKhi = useGameStore((state) => state.updateLinhKhi);
   const addText = useFloatingTextStore((state) => state.addText);
 
+  // Listen for Server Updates
+  useGameEvent('SIGNAL_LINH_KHI_GAINED', (amount) => {
+    addText(`+${amount} Linh Khí`, '#2DD4BF');
+  });
+
+  const handleToggleMeditation = () => {
+    const newState = !isMeditating;
+    setMeditating(newState);
+    gameEventBus.emit(newState ? 'CMD_MEDITATE_START' : 'CMD_MEDITATE_STOP');
+  };
+
+  // Safe Guard Render
   if (!character) return null;
 
   const isMoving = speed > 0.5;
-
-  // Auto Meditation Logic
-  useEffect(() => {
-    let interval: any;
-    if (isMeditating) {
-      interval = setInterval(() => {
-        // Gain small amount when meditating manually
-        updateLinhKhi(1);
-        addText('+1 Linh Khí', '#2DD4BF');
-      }, 1000);
-    }
-    return () => clearInterval(interval);
-  }, [isMeditating]);
 
   return (
     <div className="w-full h-full flex flex-col justify-between p-4 pointer-events-none">
@@ -76,7 +76,7 @@ export const GameHUD = () => {
         <button className="artifact-btn">TÚI ĐỒ</button>
         <button
           className={`artifact-btn ${isMeditating ? 'bg-teal/20' : ''}`}
-          onClick={() => setMeditating(!isMeditating)}
+          onClick={handleToggleMeditation}
         >
           {isMeditating ? 'XUẤT QUAN' : 'TU LUYỆN'}
         </button>

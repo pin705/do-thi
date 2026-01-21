@@ -11,6 +11,7 @@ import {
   PlayerMapData,
   GPSPosition,
   LinhCan,
+  PlayerStatus
 } from '@urban-xianxia/shared';
 import { PlayerController } from './controllers/player.controller.js';
 import { AuthController } from './controllers/auth.controller.js';
@@ -29,53 +30,40 @@ const io = new Server<ClientToServerEvents, ServerToClientEvents>(httpServer, {
 
 const PORT = process.env.PORT || 3001;
 
-// Middleware
 app.use(cors());
 app.use(express.json());
 
-// API Routes
-app.post('/api/player', PlayerController.create); // Legacy Guest
+app.post('/api/player', PlayerController.create);
 app.get('/api/player/:id', PlayerController.get);
 app.patch('/api/player/:id/progress', PlayerController.updateProgress);
-
-// Auth Routes
 app.post('/api/auth/register', AuthController.register);
 app.post('/api/auth/login', AuthController.login);
 
-// Redis Client
 const redisClient = createClient({
   url: process.env.REDIS_URL || 'redis://localhost:6379',
 });
-
 redisClient.on('error', (err) => console.log('Redis Client Error', err));
 
-// MongoDB Connection
 mongoose
   .connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/urban-xianxia')
   .then(() => console.log('Connected to MongoDB'))
   .catch((err) => console.error('MongoDB connection error:', err));
 
-// In-memory player state (synced with Redis)
+// State
 const activePlayers = new Map<string, PlayerMapData>();
+const charSocketMap = new Map<string, string>(); // CharID -> SocketID
 
-// Socket.io Logic
 io.on('connection', (socket) => {
-  console.log('Player connected:', socket.id);
   let playerId: string | null = null;
 
   socket.on('player:register', async (data) => {
     try {
       playerId = data.characterId;
+      charSocketMap.set(playerId, socket.id);
 
-      // Fetch real character data from DB
       const character = await CharacterModel.findById(playerId);
+      if (!character) return;
 
-      if (!character) {
-        console.error(`Character not found for ID: ${playerId}`);
-        return;
-      }
-
-      // Store player in Redis/Memory
       const playerData: PlayerMapData = {
         id: playerId,
         name: character.name,
@@ -83,60 +71,46 @@ io.on('connection', (socket) => {
         lng: data.position.lng,
         linhCan: character.linhCan as LinhCan,
         level: character.level as any,
-        // Default mock status if not provided yet
-        status: 'idle' as any,
-        speed: 0
+        status: PlayerStatus.IDLE,
+        speed: 0,
+        avatar: character.avatar
       };
 
       activePlayers.set(playerId, playerData);
       await redisClient.set(`player:${playerId}`, JSON.stringify(playerData));
 
-      // Broadcast join
       socket.broadcast.emit('player:joined', playerData);
-
-      // Send existing players to new player
-      const players = Array.from(activePlayers.values());
-      socket.emit('player:nearby', players);
+      socket.emit('player:nearby', Array.from(activePlayers.values()));
     } catch (err) {
       console.error('Socket register error:', err);
     }
   });
 
-  socket.on('player:move', async (position: GPSPosition) => {
+  socket.on('player:move', async (position) => {
     if (!playerId) return;
-
     const player = activePlayers.get(playerId);
     if (player) {
       player.lat = position.lat;
       player.lng = position.lng;
-      // Note: Speed/Status should be sent from Client in 'player:move' payload optimally, 
-      // or calculated here. For now, client sends raw position. 
-      // We will trust client for now or add speed to GPSPosition DTO later.
-
-      // Update in Redis
+      player.status = PlayerStatus.WALKING;
+      
       await redisClient.set(`player:${playerId}`, JSON.stringify(player));
-
-      // Broadcast movement (throttle this in production!)
       socket.broadcast.emit('player:moved', player);
-
-      // Check for nearby herbs/events (Rule-based Logic placeholder)
-      checkForEvents(playerId, position, socket);
     }
   });
 
-  socket.on('player:disconnect', () => {
-    handleDisconnect();
+  socket.on('player:meditate', async (isMeditating) => {
+    if (!playerId) return;
+    const player = activePlayers.get(playerId);
+    if (player) {
+        player.status = isMeditating ? PlayerStatus.MEDITATING : PlayerStatus.IDLE;
+        await redisClient.set(`player:${playerId}`, JSON.stringify(player));
+        socket.broadcast.emit('player:moved', player); // Reuse moved event to update status
+    }
   });
 
-  socket.on('disconnect', () => {
-    handleDisconnect();
-  });
-
-  async function handleDisconnect() {
+  socket.on('disconnect', async () => {
     if (playerId) {
-      console.log('Player disconnected:', playerId);
-      
-      // Persist data to MongoDB on disconnect
       const playerData = activePlayers.get(playerId);
       if (playerData) {
           try {
@@ -145,34 +119,35 @@ io.on('connection', (socket) => {
                   'lastPosition.lng': playerData.lng,
                   lastOnline: Date.now()
               });
-          } catch (e) {
-              console.error("Failed to save player state:", e);
-          }
+          } catch (e) { console.error(e); }
       }
-
       activePlayers.delete(playerId);
+      charSocketMap.delete(playerId);
       redisClient.del(`player:${playerId}`);
       io.emit('player:left', playerId);
-      playerId = null;
     }
-  }
+  });
 });
 
-// Rule-based Event Logic (The "Lão Tổ" System)
-function checkForEvents(playerId: string, pos: GPSPosition, socket: any) {
-  // Simple example: 1% chance to find something when moving
-  if (Math.random() < 0.01) {
-    socket.emit('laoTo:message', 'Ta cảm nhận được linh khí bất thường quanh đây!');
-  }
-}
+// Game Loop (1s Tick)
+setInterval(() => {
+    activePlayers.forEach(async (player) => {
+        if (player.status === PlayerStatus.MEDITATING) {
+            // Add Linh Khi Logic
+            // In production, buffer this and save to DB every minute
+            const socketId = charSocketMap.get(player.id);
+            if (socketId) {
+                io.to(socketId).emit('linhKhi:updated', 1);
+            }
+            
+            // Lazy Save to DB (bad for perf, good for prototype stability)
+            // await CharacterModel.findByIdAndUpdate(player.id, { $inc: { linhKhi: 1 } });
+        }
+    });
+}, 1000);
 
-// Start Server
 async function start() {
   await redisClient.connect();
-
-  httpServer.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-  });
+  httpServer.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 }
-
 start();

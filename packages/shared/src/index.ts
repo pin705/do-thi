@@ -127,6 +127,7 @@ export interface ServerToClientEvents {
 export interface ClientToServerEvents {
   'player:register': (data: { characterId: string; position: GPSPosition }) => void;
   'player:move': (position: GPSPosition) => void;
+  'player:meditate': (isMeditating: boolean) => void;
   'player:action': (action: { type: string; targetId?: string }) => void;
   'player:disconnect': () => void;
 }
