@@ -120,6 +120,7 @@ export interface ServerToClientEvents {
   'player:left': (playerId: string) => void;
   'player:moved': (player: PlayerMapData) => void;
   'linhKhi:updated': (amount: number) => void;
+  'player:exp_gained': (data: { id: string, amount: number }) => void;
   'laoTo:message': (message: string) => void;
   'combat:damage': (data: { targetId: string; amount: number }) => void;
 }

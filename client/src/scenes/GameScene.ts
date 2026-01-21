@@ -79,12 +79,16 @@ export class GameScene extends Phaser.Scene {
     this.socket.on('player:moved', (player) => this.mapSystem?.updateOtherPlayers([player]));
     this.socket.on('player:joined', (player) => this.mapSystem?.updateOtherPlayers([player]));
     
-    // Listen for Linh Khi update from Server Loop
-    this.socket.on('linhKhi:updated', (amount) => {
-        // Update Store
-        useGameStore.getState().updateLinhKhi(amount);
-        // Notify UI for Floating Text
-        gameEventBus.emit('SIGNAL_LINH_KHI_GAINED', amount);
+    // Listen for EXP gain from Server Loop
+    this.socket.on('player:exp_gained', (data) => {
+        if (data.id === this.characterId) {
+            // Update Store
+            useGameStore.getState().updateLinhKhi(data.amount);
+            // Notify UI for Floating Text
+            gameEventBus.emit('SIGNAL_LINH_KHI_GAINED', data.amount);
+        } else {
+            // TODO: Show floating text on other player's marker
+        }
     });
   }
 

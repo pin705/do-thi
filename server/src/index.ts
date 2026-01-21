@@ -131,17 +131,10 @@ io.on('connection', (socket) => {
 
 // Game Loop (1s Tick)
 setInterval(() => {
-    activePlayers.forEach(async (player) => {
+    activePlayers.forEach((player) => {
         if (player.status === PlayerStatus.MEDITATING) {
-            // Add Linh Khi Logic
-            // In production, buffer this and save to DB every minute
-            const socketId = charSocketMap.get(player.id);
-            if (socketId) {
-                io.to(socketId).emit('linhKhi:updated', 1);
-            }
-            
-            // Lazy Save to DB (bad for perf, good for prototype stability)
-            // await CharacterModel.findByIdAndUpdate(player.id, { $inc: { linhKhi: 1 } });
+            // Broadcast XP gain to everyone (so others can see floating text)
+            io.emit('player:exp_gained', { id: player.id, amount: 1 });
         }
     });
 }, 1000);
