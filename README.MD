@@ -1,6 +1,7 @@
 # ĐÔ THỊ TU TIÊN H5 - SETUP GUIDE
 
 ## Prerequisites
+
 - Node.js >= 18
 - pnpm >= 8.0 (`npm install -g pnpm`)
 - Docker (for MongoDB & Redis)
@@ -10,17 +11,20 @@
 This project is a Monorepo using **pnpm workspaces**.
 
 1.  **Install Dependencies:**
+
     ```bash
     pnpm install
     ```
 
 2.  **Start Infrastructure (Database):**
+
     ```bash
     docker run -d -p 27017:27017 --name mongodb mongo:latest
     docker run -d -p 6379:6379 --name redis redis:alpine
     ```
 
 3.  **Run Development Mode:**
+
     ```bash
     # Runs both Client and Server in parallel
     pnpm run dev
@@ -120,6 +124,7 @@ Thay vì dùng LLM (như GPT-4) tốn kém, chúng ta dùng **"Lão Tổ Logic"*
 ## 5. KIẾN TRÚC HỆ THỐNG (TECHNICAL ARCHITECTURE)
 
 1. **Client (Phaser.js):** Chạy trên trình duyệt, xử lý hình ảnh và âm thanh.
+   1.2 **Client (React):** Chạy trên trình duyệt, xử lý giao diện và tương tác người dùng.
 2. **Real-time (Socket.io):** Duy trì kết nối để người chơi thấy nhau trên bản đồ.
 3. **Server (Node.js):** Xử lý mọi logic tính toán (Tránh người chơi hack linh khí).
 4. **Database (MongoDB):** Lưu trữ lâu dài thông tin nhân vật.

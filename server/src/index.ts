@@ -12,6 +12,8 @@ import {
   GPSPosition,
   LinhCan,
 } from '@urban-xianxia/shared';
+import { PlayerController } from './controllers/player.controller.js';
+import { CharacterModel } from './models/Character.js';
 
 dotenv.config();
 
@@ -29,6 +31,11 @@ const PORT = process.env.PORT || 3001;
 // Middleware
 app.use(cors());
 app.use(express.json());
+
+// API Routes
+app.post('/api/player', PlayerController.create);
+app.get('/api/player/:id', PlayerController.get);
+app.patch('/api/player/:id/progress', PlayerController.updateProgress);
 
 // Redis Client
 const redisClient = createClient({
@@ -52,27 +59,39 @@ io.on('connection', (socket) => {
   let playerId: string | null = null;
 
   socket.on('player:register', async (data) => {
-    playerId = data.characterId;
+    try {
+      playerId = data.characterId;
 
-    // Store player in Redis/Memory
-    const playerData: PlayerMapData = {
-      id: playerId,
-      name: `Daoist ${playerId.substr(0, 4)}`, // Placeholder name lookup
-      lat: data.position.lat,
-      lng: data.position.lng,
-      linhCan: LinhCan.KIM, // Placeholder: fetch from DB
-      level: 'luyen_khi' as any, // Placeholder
-    };
+      // Fetch real character data from DB
+      const character = await CharacterModel.findById(playerId);
 
-    activePlayers.set(playerId, playerData);
-    await redisClient.set(`player:${playerId}`, JSON.stringify(playerData));
+      if (!character) {
+        console.error(`Character not found for ID: ${playerId}`);
+        return;
+      }
 
-    // Broadcast join
-    socket.broadcast.emit('player:joined', playerData);
+      // Store player in Redis/Memory
+      const playerData: PlayerMapData = {
+        id: playerId,
+        name: character.name,
+        lat: data.position.lat,
+        lng: data.position.lng,
+        linhCan: character.linhCan as LinhCan,
+        level: character.level as any,
+      };
 
-    // Send existing players to new player
-    const players = Array.from(activePlayers.values());
-    socket.emit('player:nearby', players);
+      activePlayers.set(playerId, playerData);
+      await redisClient.set(`player:${playerId}`, JSON.stringify(playerData));
+
+      // Broadcast join
+      socket.broadcast.emit('player:joined', playerData);
+
+      // Send existing players to new player
+      const players = Array.from(activePlayers.values());
+      socket.emit('player:nearby', players);
+    } catch (err) {
+      console.error('Socket register error:', err);
+    }
   });
 
   socket.on('player:move', async (position: GPSPosition) => {
