@@ -1,16 +1,12 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
+import { useGameEvent } from '../hooks/useGameEvent';
 
 export const PreloadUI = () => {
   const [progress, setProgress] = useState(0);
 
-  useEffect(() => {
-    const handler = (e: Event) => {
-      const customEvent = e as CustomEvent;
-      setProgress(customEvent.detail.progress);
-    };
-    window.addEventListener('PHASER_LOAD_PROGRESS', handler);
-    return () => window.removeEventListener('PHASER_LOAD_PROGRESS', handler);
-  }, []);
+  useGameEvent('SIGNAL_LOAD_PROGRESS', (value) => {
+    setProgress(value);
+  });
 
   return (
     <div className="w-full h-full flex flex-col items-center justify-center bg-[var(--deep-void)] pointer-events-auto">
