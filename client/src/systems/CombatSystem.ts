@@ -36,8 +36,8 @@ interface SpeechRecognition extends EventTarget {
 // Global declaration for SpeechRecognition
 declare global {
   interface Window {
-    SpeechRecognition: { new(): SpeechRecognition };
-    webkitSpeechRecognition: { new(): SpeechRecognition };
+    SpeechRecognition: { new (): SpeechRecognition };
+    webkitSpeechRecognition: { new (): SpeechRecognition };
   }
 }
 
@@ -45,13 +45,13 @@ export class CombatSystem {
   private recognition: SpeechRecognition | null = null;
   private isListening: boolean = false;
   private voiceCommands: VoiceCommand[] = [];
-  
+
   // Gesture state
   private points: { x: number; y: number }[] = [];
   private isDrawing: boolean = false;
   private canvas: HTMLCanvasElement | null = null;
   private ctx: CanvasRenderingContext2D | null = null;
-  
+
   // Callbacks
   private onGestureDetected: ((gesture: GestureType) => void) | null = null;
   private onVoiceCommand: ((command: VoiceCommand) => void) | null = null;
@@ -68,7 +68,7 @@ export class CombatSystem {
     if (this.canvas) {
       this.ctx = this.canvas.getContext('2d');
       this.setupTouchEvents();
-      
+
       // Resize canvas to fit container
       const resize = () => {
         if (this.canvas && this.canvas.parentElement) {
@@ -86,7 +86,7 @@ export class CombatSystem {
    */
   startCombat(
     onGesture: (gesture: GestureType) => void,
-    onVoice: (command: VoiceCommand) => void
+    onVoice: (command: VoiceCommand) => void,
   ): void {
     this.onGestureDetected = onGesture;
     this.onVoiceCommand = onVoice;
@@ -130,13 +130,13 @@ export class CombatSystem {
     this.recognition.onend = () => {
       if (this.isListening) {
         try {
-            this.recognition?.start(); // Restart if still supposed to be listening
+          this.recognition?.start(); // Restart if still supposed to be listening
         } catch (e) {
-            // Ignore already started errors
+          // Ignore already started errors
         }
       }
     };
-    
+
     // Default commands
     this.voiceCommands = [
       { keyword: 'bộc phá', action: 'attack_boost', linhKhiCost: 10 },
@@ -167,7 +167,7 @@ export class CombatSystem {
   }
 
   private processVoiceCommand(transcript: string): void {
-    const command = this.voiceCommands.find(cmd => transcript.includes(cmd.keyword));
+    const command = this.voiceCommands.find((cmd) => transcript.includes(cmd.keyword));
     if (command && this.onVoiceCommand) {
       this.onVoiceCommand(command);
     }
@@ -185,23 +185,31 @@ export class CombatSystem {
     this.canvas.addEventListener('mouseleave', () => this.endDrawing());
 
     // Touch events
-    this.canvas.addEventListener('touchstart', (e) => {
-      e.preventDefault();
-      const touch = e.touches[0];
-      const rect = this.canvas!.getBoundingClientRect();
-      this.startDrawing(touch.clientX - rect.left, touch.clientY - rect.top);
-    }, { passive: false });
+    this.canvas.addEventListener(
+      'touchstart',
+      (e) => {
+        e.preventDefault();
+        const touch = e.touches[0];
+        const rect = this.canvas!.getBoundingClientRect();
+        this.startDrawing(touch.clientX - rect.left, touch.clientY - rect.top);
+      },
+      { passive: false },
+    );
 
-    this.canvas.addEventListener('touchmove', (e) => {
-      e.preventDefault();
-      const touch = e.touches[0];
-      const rect = this.canvas!.getBoundingClientRect();
-      this.draw(touch.clientX - rect.left, touch.clientY - rect.top);
-    }, { passive: false });
+    this.canvas.addEventListener(
+      'touchmove',
+      (e) => {
+        e.preventDefault();
+        const touch = e.touches[0];
+        const rect = this.canvas!.getBoundingClientRect();
+        this.draw(touch.clientX - rect.left, touch.clientY - rect.top);
+      },
+      { passive: false },
+    );
 
     this.canvas.addEventListener('touchend', (e) => {
-        e.preventDefault();
-        this.endDrawing();
+      e.preventDefault();
+      this.endDrawing();
     });
   }
 
@@ -210,7 +218,7 @@ export class CombatSystem {
     this.points = [{ x, y }];
     this.ctx?.beginPath();
     this.ctx?.moveTo(x, y);
-    
+
     // Visual feedback
     if (this.ctx) {
       this.ctx.strokeStyle = '#00ffff'; // Cyan glowing line
@@ -232,7 +240,7 @@ export class CombatSystem {
     if (!this.isDrawing) return;
     this.isDrawing = false;
     this.analyzeGesture();
-    
+
     // Fade out effect (optional, here we just clear after a short delay)
     setTimeout(() => this.clearCanvas(), 500);
   }
@@ -250,10 +258,10 @@ export class CombatSystem {
     if (this.points.length < 10) return; // Ignore small dots
 
     // Normalize points
-    const minX = Math.min(...this.points.map(p => p.x));
-    const maxX = Math.max(...this.points.map(p => p.x));
-    const minY = Math.min(...this.points.map(p => p.y));
-    const maxY = Math.max(...this.points.map(p => p.y));
+    const minX = Math.min(...this.points.map((p) => p.x));
+    const maxX = Math.max(...this.points.map((p) => p.x));
+    const minY = Math.min(...this.points.map((p) => p.y));
+    const maxY = Math.max(...this.points.map((p) => p.y));
     const width = maxX - minX;
     const height = maxY - minY;
 
@@ -262,14 +270,14 @@ export class CombatSystem {
     // Detect shapes based on bounding box and start/end points
     const start = this.points[0];
     const end = this.points[this.points.length - 1];
-    
+
     // Simple heuristic for "V" shape (Sword Strike)
     // Starts high, goes down-right/down-left, then goes up
     const midIndex = Math.floor(this.points.length / 2);
     const mid = this.points[midIndex];
-    
+
     const isV = start.y < mid.y && end.y < mid.y && Math.abs(start.x - end.x) > width * 0.3;
-    
+
     // Simple heuristic for "Circle" (Shield)
     // Start and end are close
     const distStartEnd = Math.hypot(start.x - end.x, start.y - end.y);

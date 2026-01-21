@@ -35,16 +35,16 @@ export class CameraAnalyzer {
   async startCamera(videoElement: HTMLVideoElement): Promise<boolean> {
     try {
       this.stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'user', width: 640, height: 480 }
+        video: { facingMode: 'user', width: 640, height: 480 },
       });
-      
+
       videoElement.srcObject = this.stream;
       await videoElement.play();
-      
+
       this.video = videoElement;
       this.canvas.width = videoElement.videoWidth || 640;
       this.canvas.height = videoElement.videoHeight || 480;
-      
+
       return true;
     } catch (error) {
       console.error('Camera access denied:', error);
@@ -57,7 +57,7 @@ export class CameraAnalyzer {
    */
   stopCamera(): void {
     if (this.stream) {
-      this.stream.getTracks().forEach(track => track.stop());
+      this.stream.getTracks().forEach((track) => track.stop());
       this.stream = null;
     }
     this.video = null;
@@ -71,37 +71,41 @@ export class CameraAnalyzer {
 
     // Draw current frame to canvas
     this.ctx.drawImage(this.video, 0, 0, this.canvas.width, this.canvas.height);
-    
+
     // Get image data from center region (focus on face area)
     const centerX = this.canvas.width * 0.25;
     const centerY = this.canvas.height * 0.25;
     const sampleWidth = this.canvas.width * 0.5;
     const sampleHeight = this.canvas.height * 0.5;
-    
+
     const imageData = this.ctx.getImageData(centerX, centerY, sampleWidth, sampleHeight);
-    
+
     return this.analyzePixels(imageData);
   }
 
   /**
    * Analyze pixels to determine dominant color and Linh Căn
    */
-  private analyzePixels(imageData: ImageData): { linhCan: LinhCan; confidence: number; dominantColor: string } {
+  private analyzePixels(imageData: ImageData): {
+    linhCan: LinhCan;
+    confidence: number;
+    dominantColor: string;
+  } {
     const pixels = imageData.data;
     const hueHistogram: Record<number, number> = {};
-    
+
     // Sample every 4th pixel for performance
     for (let i = 0; i < pixels.length; i += 16) {
       const r = pixels[i];
       const g = pixels[i + 1];
       const b = pixels[i + 2];
-      
+
       // Convert RGB to HSL
       const { h, s, l } = this.rgbToHsl(r, g, b);
-      
+
       // Skip very dark or very light pixels (background/highlights)
       if (l < 0.15 || l > 0.85 || s < 0.2) continue;
-      
+
       // Round hue to nearest 10 degrees for bucketing
       const hueBucket = Math.round(h / 10) * 10;
       hueHistogram[hueBucket] = (hueHistogram[hueBucket] || 0) + 1;
@@ -174,7 +178,7 @@ export class CameraAnalyzer {
         return { linhCan: range.linhCan, color: range.color };
       }
     }
-    
+
     // Default to Earth (Thổ) for undefined colors
     return { linhCan: LinhCan.THO, color: '#8B4513' };
   }
@@ -182,8 +186,16 @@ export class CameraAnalyzer {
   /**
    * Get Linh Căn display info
    */
-  static getLinhCanInfo(linhCan: LinhCan): { name: string; element: string; color: string; description: string } {
-    const info: Record<LinhCan, { name: string; element: string; color: string; description: string }> = {
+  static getLinhCanInfo(linhCan: LinhCan): {
+    name: string;
+    element: string;
+    color: string;
+    description: string;
+  } {
+    const info: Record<
+      LinhCan,
+      { name: string; element: string; color: string; description: string }
+    > = {
       [LinhCan.KIM]: {
         name: 'Kim Linh Căn',
         element: 'Kim (Metal)',
@@ -215,7 +227,7 @@ export class CameraAnalyzer {
         description: 'Vững chãi, bền bỉ. Thiên phú về phòng thủ và trận pháp.',
       },
     };
-    
+
     return info[linhCan];
   }
 }

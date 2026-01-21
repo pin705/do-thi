@@ -9,7 +9,7 @@ const defaultIcon = L.icon({
   iconSize: [25, 41],
   iconAnchor: [12, 41],
   popupAnchor: [1, -34],
-  shadowSize: [41, 41]
+  shadowSize: [41, 41],
 });
 
 L.Marker.prototype.options.icon = defaultIcon;
@@ -20,7 +20,7 @@ export class MapSystem {
   private otherPlayerMarkers: Map<string, L.Marker> = new Map();
   private herbMarkers: Map<string, L.Marker> = new Map();
   private userCircle: L.Circle | null = null;
-  
+
   // Callbacks
   private onHerbClick: ((herb: SpiritHerb) => void) | null = null;
 
@@ -42,10 +42,10 @@ export class MapSystem {
     // Default view (will be updated by GPS)
     this.map = L.map(elementId, {
       zoomControl: false,
-      attributionControl: false
+      attributionControl: false,
     }).setView([21.0285, 105.8542], 16); // Hanoi default
 
-    // Dark mode map tiles (Stadia Maps or CartoDB Dark Matter are good for gaming look, 
+    // Dark mode map tiles (Stadia Maps or CartoDB Dark Matter are good for gaming look,
     // but we use OpenStreetMap standard for guaranteed free access, maybe styled with CSS later)
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19,
@@ -69,18 +69,18 @@ export class MapSystem {
         className: 'player-marker-icon',
         html: '<div class="pulse"></div><div class="dot"></div>',
         iconSize: [20, 20],
-        iconAnchor: [10, 10]
+        iconAnchor: [10, 10],
       });
 
       this.playerMarker = L.marker(latLng, { icon: playerIcon }).addTo(this.map);
-      
+
       // Add detection radius circle (50m)
       this.userCircle = L.circle(latLng, {
         radius: 50,
         color: '#4a90e2',
         fillColor: '#4a90e2',
         fillOpacity: 0.1,
-        weight: 1
+        weight: 1,
       }).addTo(this.map);
 
       this.map.setView(latLng, 17); // Zoom in on first locate
@@ -101,7 +101,7 @@ export class MapSystem {
     // Track active IDs to remove disconnected players
     const activeIds = new Set<string>();
 
-    players.forEach(player => {
+    players.forEach((player) => {
       activeIds.add(player.id);
       const latLng = new L.LatLng(player.lat, player.lng);
 
@@ -116,7 +116,7 @@ export class MapSystem {
           className: 'other-player-icon',
           html: `<div class="player-dot" style="background-color: ${color}"></div><div class="player-name">${player.name}</div>`,
           iconSize: [40, 40],
-          iconAnchor: [20, 35]
+          iconAnchor: [20, 35],
         });
 
         const marker = L.marker(latLng, { icon }).addTo(this.map!);
@@ -141,26 +141,26 @@ export class MapSystem {
     if (!this.map) return;
     this.onHerbClick = onHerbClick;
 
-    // Clear old markers that are not in the new list? 
-    // For simplicity, we'll clear all and redraw or update. 
+    // Clear old markers that are not in the new list?
+    // For simplicity, we'll clear all and redraw or update.
     // A better approach is diffing, similar to players.
-    
+
     // Simple implementation: clear all and redraw
-    this.herbMarkers.forEach(marker => marker.remove());
+    this.herbMarkers.forEach((marker) => marker.remove());
     this.herbMarkers.clear();
 
-    herbs.forEach(herb => {
+    herbs.forEach((herb) => {
       const latLng = new L.LatLng(herb.lat, herb.lng);
-      
+
       const icon = L.divIcon({
         className: 'herb-marker',
         html: `<div class="herb-icon ${herb.rarity}">🌿</div>`,
         iconSize: [30, 30],
-        iconAnchor: [15, 15]
+        iconAnchor: [15, 15],
       });
 
       const marker = L.marker(latLng, { icon }).addTo(this.map!);
-      
+
       // Click handler for AR mode
       marker.on('click', () => {
         if (this.onHerbClick) {
@@ -177,12 +177,18 @@ export class MapSystem {
    */
   private getLinhCanColor(linhCan: LinhCan): string {
     switch (linhCan) {
-      case LinhCan.KIM: return '#FFD700'; // Gold
-      case LinhCan.MOC: return '#228B22'; // Green
-      case LinhCan.THUY: return '#1E90FF'; // Blue
-      case LinhCan.HOA: return '#FF4500'; // Red
-      case LinhCan.THO: return '#8B4513'; // Brown
-      default: return '#999999';
+      case LinhCan.KIM:
+        return '#FFD700'; // Gold
+      case LinhCan.MOC:
+        return '#228B22'; // Green
+      case LinhCan.THUY:
+        return '#1E90FF'; // Blue
+      case LinhCan.HOA:
+        return '#FF4500'; // Red
+      case LinhCan.THO:
+        return '#8B4513'; // Brown
+      default:
+        return '#999999';
     }
   }
 

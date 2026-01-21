@@ -28,7 +28,7 @@ export class GPSTracker {
    */
   startTracking(
     onUpdate: (result: GPSTrackingResult) => void,
-    onError?: (error: GeolocationPositionError) => void
+    onError?: (error: GeolocationPositionError) => void,
   ): boolean {
     if (!navigator.geolocation) {
       console.error('Geolocation not supported');
@@ -45,7 +45,7 @@ export class GPSTracker {
         enableHighAccuracy: true,
         timeout: 10000,
         maximumAge: 5000,
-      }
+      },
     );
 
     return true;
@@ -80,7 +80,7 @@ export class GPSTracker {
           });
         },
         () => resolve(null),
-        { enableHighAccuracy: true, timeout: 10000 }
+        { enableHighAccuracy: true, timeout: 10000 },
       );
     });
   }
@@ -104,7 +104,7 @@ export class GPSTracker {
         this.lastPosition.lat,
         this.lastPosition.lng,
         currentPosition.lat,
-        currentPosition.lng
+        currentPosition.lng,
       );
 
       // Filter out GPS noise (ignore movements less than 5m or more than 100m in one update)
@@ -146,12 +146,7 @@ export class GPSTracker {
    * Calculate distance between two GPS coordinates using Haversine formula
    * Returns distance in meters
    */
-  private calculateDistance(
-    lat1: number,
-    lng1: number,
-    lat2: number,
-    lng2: number
-  ): number {
+  private calculateDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
     const dLat = this.toRadians(lat2 - lat1);
     const dLng = this.toRadians(lng2 - lng1);
 
@@ -178,7 +173,7 @@ export class GPSTracker {
    */
   static calculatePassiveCultivation(
     lastOnlineTimestamp: number,
-    currentTimestamp: number = Date.now()
+    currentTimestamp: number = Date.now(),
   ): { linhKhiGained: number; hoursElapsed: number } {
     const msElapsed = currentTimestamp - lastOnlineTimestamp;
     const hoursElapsed = msElapsed / (1000 * 60 * 60);
